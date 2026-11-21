@@ -45,6 +45,8 @@ app.get('/full/:room', (req, res) => {
 });
 
 function resetGame(r) {
+  if (r.refresh) { clearTimeout(r.refresh.timer); }
+  r.refresh = null;
   let h; do { h = rnd(HEROES.length); } while (HEROES.length > 1 && h === r.hero);
   Object.assign(r, {
     hero: h, gameId: (r.gameId || 0) + 1, status: 'waiting', started: false, winner: 0, reason: '',
@@ -71,7 +73,7 @@ function view(r, slot) {
     over || r.rev[slot].has(i) ? 1 : mine && mine.cell === i ? 2 : r.res[o] && r.res[o].cell === i ? 3 : r.failed[slot].has(i) ? 4 : 0);
   return {
     t: 'state', room: r.id, you: slot, gameId: r.gameId, status: r.status, method: r.method,
-    methodLocked: r.started, cells, wrong: r.wrong[slot], winner: r.winner, reason: r.reason,
+    methodLocked: r.started, refresh: r.refresh ? { from: r.refresh.from } : null, cells, wrong: r.wrong[slot], winner: r.winner, reason: r.reason,
     heroName: over ? HEROES[r.hero].name : null,
     mine: mine ? { cell: mine.cell, left: mine.expires - Date.now(), secs: mine.secs, q: mine.q.text } : null,
     players: [1, 2].map(s => r.players[s] ? {
@@ -83,6 +85,7 @@ function broadcast(r) {
   r.last = Date.now();
   [1, 2].forEach(s => { const p = r.players[s]; if (p && p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify(view(r, s))); });
 }
+function notify(r, slot, msg) { const p = r.players[slot]; if (p && p.ws && p.ws.readyState === 1) p.ws.send(JSON.stringify({ t: 'notice', msg })); }
 const err = (ws, code, msg) => ws.send(JSON.stringify({ t: 'error', code, msg }));
 
 function fail(r, slot, cell) {
@@ -118,6 +121,20 @@ wss.on('connection', ws => {
     const r = room, o = slot === 1 ? 2 : 1;
     if (m.t === 'method' && slot === 1 && !r.started && (m.method === 1 || m.method === 2)) { r.method = m.method; return broadcast(r); }
     if (m.t === 'newgame' && r.status === 'over') { resetGame(r); return broadcast(r); }
+    if (m.t === 'refresh_request') {
+      if (r.status === 'waiting' || !r.players[o]) return err(ws, 'no_opp', 'Wait until both players have joined.');
+      if (r.refresh) return err(ws, 'pending', 'A refresh request is already waiting for an answer.');
+      const req = { from: slot };
+      req.timer = setTimeout(() => { if (r.refresh === req) { r.refresh = null; notify(r, slot, 'Refresh request expired.'); broadcast(r); } }, 30000);
+      r.refresh = req; return broadcast(r);
+    }
+    if (m.t === 'refresh_cancel') { if (r.refresh && r.refresh.from === slot) { clearTimeout(r.refresh.timer); r.refresh = null; broadcast(r); } return; }
+    if (m.t === 'refresh_reply') {
+      if (!r.refresh || r.refresh.from !== o) return;
+      if (m.accept) { resetGame(r); notify(r, o, 'Board refreshed: new picture, fresh start.'); }
+      else { clearTimeout(r.refresh.timer); r.refresh = null; notify(r, o, 'Your opponent declined the refresh.'); }
+      return broadcast(r);
+    }
     if (r.status !== 'playing') return;
 
     if (m.t === 'claim') {
