@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2a6b"/><stop offset="1" stop-color="#6a8dff"/></linearGradient></defs>
+<rect width="800" height="800" fill="url(#g)"/>
+<circle cx="630" cy="150" r="95" fill="#fff3a0" opacity=".85"/>
+<rect x="0" y="660" width="76" height="140" fill="#000" opacity=".28"/><rect x="80" y="607" width="76" height="193" fill="#000" opacity=".28"/><rect x="160" y="554" width="76" height="246" fill="#000" opacity=".28"/><rect x="240" y="501" width="76" height="299" fill="#000" opacity=".28"/><rect x="320" y="638" width="76" height="162" fill="#000" opacity=".28"/><rect x="400" y="585" width="76" height="215" fill="#000" opacity=".28"/><rect x="480" y="532" width="76" height="268" fill="#000" opacity=".28"/><rect x="560" y="479" width="76" height="321" fill="#000" opacity=".28"/><rect x="640" y="616" width="76" height="184" fill="#000" opacity=".28"/><rect x="720" y="563" width="76" height="237" fill="#000" opacity=".28"/>
+<path d="M400 320 L150 730 Q400 660 650 730Z" fill="#f5b800"/>
+<rect x="330" y="540" width="62" height="200" rx="26" fill="#2457ff"/><rect x="408" y="540" width="62" height="200" rx="26" fill="#2457ff"/>
+<rect x="322" y="705" width="78" height="55" rx="16" fill="#ffd23f"/><rect x="400" y="705" width="78" height="55" rx="16" fill="#ffd23f"/>
+<path d="M318 300 H482 L508 560 H292Z" fill="#2457ff"/>
+<rect x="292" y="520" width="216" height="26" fill="#ffd23f"/>
+<path d="M322 330 L225 215" stroke="#2457ff" stroke-width="54" stroke-linecap="round"/><circle cx="218" cy="205" r="36" fill="#ffd23f"/>
+<path d="M478 330 L575 440 L520 505" stroke="#2457ff" stroke-width="54" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="515" cy="510" r="34" fill="#ffd23f"/>
+<g transform="translate(400 405) scale(2.3)"><polygon points="4,-22 -12,2 -1,2 -5,22 13,-4 2,-4" fill="#ffd23f"/></g>
+<circle cx="400" cy="235" r="64" fill="#f0c9a0"/>
+<path d="M336 240 A64 64 0 0 1 464 240 Q400 190 336 240Z" fill="#2457ff"/>
+<path d="M336 212 Q400 190 464 212 L460 256 Q400 240 340 256Z" fill="#ffd23f"/>
+<ellipse cx="372" cy="232" rx="14" ry="8" fill="#fff"/><ellipse cx="428" cy="232" rx="14" ry="8" fill="#fff"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a2d00"/><stop offset="1" stop-color="#ffc93c"/></linearGradient><clipPath id="c"><circle cx="60" cy="60" r="58"/></clipPath></defs>
+<g clip-path="url(#c)"><rect width="120" height="120" fill="url(#g)"/>
+<ellipse cx="60" cy="122" rx="44" ry="34" fill="#f28c00"/><g transform="translate(60 106) scale(.6)"><circle r="11" fill="#fff1b8"/><g stroke="#fff1b8" stroke-width="4" stroke-linecap="round"><path transform="rotate(0)" d="M0-16V-24"/><path transform="rotate(45)" d="M0-16V-24"/><path transform="rotate(90)" d="M0-16V-24"/><path transform="rotate(135)" d="M0-16V-24"/><path transform="rotate(180)" d="M0-16V-24"/><path transform="rotate(225)" d="M0-16V-24"/><path transform="rotate(270)" d="M0-16V-24"/><path transform="rotate(315)" d="M0-16V-24"/></g></g>
+<circle cx="60" cy="56" r="30" fill="#f0c9a0"/><path d="M30 58 A30 30 0 0 1 90 58 Q60 36 30 58Z" fill="#f28c00"/>
+<path d="M30 46 Q60 34 90 46 L88 66 Q60 58 32 66Z" fill="#fff1b8"/>
+<ellipse cx="48" cy="55" rx="7" ry="4" fill="#fff"/><ellipse cx="72" cy="55" rx="7" ry="4" fill="#fff"/></g>
+<circle cx="60" cy="60" r="57" fill="none" stroke="#14213d" stroke-width="4"/></svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f3d1e"/><stop offset="1" stop-color="#8bd34f"/></linearGradient></defs>
+<rect width="800" height="800" fill="url(#g)"/>
+<circle cx="170" cy="150" r="95" fill="#eaffb5" opacity=".85"/>
+<rect x="0" y="549" width="76" height="251" fill="#000" opacity=".28"/><rect x="80" y="496" width="76" height="304" fill="#000" opacity=".28"/><rect x="160" y="633" width="76" height="167" fill="#000" opacity=".28"/><rect x="240" y="580" width="76" height="220" fill="#000" opacity=".28"/><rect x="320" y="527" width="76" height="273" fill="#000" opacity=".28"/><rect x="400" y="474" width="76" height="326" fill="#000" opacity=".28"/><rect x="480" y="611" width="76" height="189" fill="#000" opacity=".28"/><rect x="560" y="558" width="76" height="242" fill="#000" opacity=".28"/><rect x="640" y="505" width="76" height="295" fill="#000" opacity=".28"/><rect x="720" y="642" width="76" height="158" fill="#000" opacity=".28"/>
+<path d="M400 320 L150 730 Q400 660 650 730Z" fill="#1c6b2a"/>
+<rect x="330" y="540" width="62" height="200" rx="26" fill="#2e9d3f"/><rect x="408" y="540" width="62" height="200" rx="26" fill="#2e9d3f"/>
+<rect x="322" y="705" width="78" height="55" rx="16" fill="#f3e34b"/><rect x="400" y="705" width="78" height="55" rx="16" fill="#f3e34b"/>
+<path d="M318 300 H482 L508 560 H292Z" fill="#2e9d3f"/>
+<rect x="292" y="520" width="216" height="26" fill="#f3e34b"/>
+<path d="M322 330 L225 215" stroke="#2e9d3f" stroke-width="54" stroke-linecap="round"/><circle cx="218" cy="205" r="36" fill="#f3e34b"/>
+<path d="M478 330 L575 440 L520 505" stroke="#2e9d3f" stroke-width="54" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="515" cy="510" r="34" fill="#f3e34b"/>
+<g transform="translate(400 405) scale(2.3)"><path d="M-18 18C-18-14 4-22 20-20 22-2 14 18-18 18Z" fill="#f3e34b"/></g>
+<circle cx="400" cy="235" r="64" fill="#f0c9a0"/>
+<path d="M336 240 A64 64 0 0 1 464 240 Q400 190 336 240Z" fill="#2e9d3f"/>
+<path d="M336 212 Q400 190 464 212 L460 256 Q400 240 340 256Z" fill="#f3e34b"/>
+<ellipse cx="372" cy="232" rx="14" ry="8" fill="#fff"/><ellipse cx="428" cy="232" rx="14" ry="8" fill="#fff"/>
+</svg>

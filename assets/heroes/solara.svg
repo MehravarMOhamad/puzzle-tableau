@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a2d00"/><stop offset="1" stop-color="#ffc93c"/></linearGradient></defs>
+<rect width="800" height="800" fill="url(#g)"/>
+<circle cx="170" cy="150" r="95" fill="#fff7d1" opacity=".85"/>
+<rect x="0" y="591" width="76" height="209" fill="#000" opacity=".28"/><rect x="80" y="538" width="76" height="262" fill="#000" opacity=".28"/><rect x="160" y="485" width="76" height="315" fill="#000" opacity=".28"/><rect x="240" y="622" width="76" height="178" fill="#000" opacity=".28"/><rect x="320" y="569" width="76" height="231" fill="#000" opacity=".28"/><rect x="400" y="516" width="76" height="284" fill="#000" opacity=".28"/><rect x="480" y="653" width="76" height="147" fill="#000" opacity=".28"/><rect x="560" y="600" width="76" height="200" fill="#000" opacity=".28"/><rect x="640" y="547" width="76" height="253" fill="#000" opacity=".28"/><rect x="720" y="494" width="76" height="306" fill="#000" opacity=".28"/>
+<path d="M400 320 L150 730 Q400 660 650 730Z" fill="#c25a00"/>
+<rect x="330" y="540" width="62" height="200" rx="26" fill="#f28c00"/><rect x="408" y="540" width="62" height="200" rx="26" fill="#f28c00"/>
+<rect x="322" y="705" width="78" height="55" rx="16" fill="#fff1b8"/><rect x="400" y="705" width="78" height="55" rx="16" fill="#fff1b8"/>
+<path d="M318 300 H482 L508 560 H292Z" fill="#f28c00"/>
+<rect x="292" y="520" width="216" height="26" fill="#fff1b8"/>
+<path d="M322 330 L225 215" stroke="#f28c00" stroke-width="54" stroke-linecap="round"/><circle cx="218" cy="205" r="36" fill="#fff1b8"/>
+<path d="M478 330 L575 440 L520 505" stroke="#f28c00" stroke-width="54" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="515" cy="510" r="34" fill="#fff1b8"/>
+<g transform="translate(400 405) scale(2.3)"><circle r="11" fill="#fff1b8"/><g stroke="#fff1b8" stroke-width="4" stroke-linecap="round"><path transform="rotate(0)" d="M0-16V-24"/><path transform="rotate(45)" d="M0-16V-24"/><path transform="rotate(90)" d="M0-16V-24"/><path transform="rotate(135)" d="M0-16V-24"/><path transform="rotate(180)" d="M0-16V-24"/><path transform="rotate(225)" d="M0-16V-24"/><path transform="rotate(270)" d="M0-16V-24"/><path transform="rotate(315)" d="M0-16V-24"/></g></g>
+<circle cx="400" cy="235" r="64" fill="#f0c9a0"/>
+<path d="M336 240 A64 64 0 0 1 464 240 Q400 190 336 240Z" fill="#f28c00"/>
+<path d="M336 212 Q400 190 464 212 L460 256 Q400 240 340 256Z" fill="#fff1b8"/>
+<ellipse cx="372" cy="232" rx="14" ry="8" fill="#fff"/><ellipse cx="428" cy="232" rx="14" ry="8" fill="#fff"/>
+</svg>

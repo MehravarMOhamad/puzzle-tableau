@@ -1,0 +1,62 @@
+[
+  {
+    "id": "voltra",
+    "name": "Voltra",
+    "file": "voltra.svg",
+    "icon": "/icons/voltra.svg"
+  },
+  {
+    "id": "emberhawk",
+    "name": "Emberhawk",
+    "file": "emberhawk.svg",
+    "icon": "/icons/emberhawk.svg"
+  },
+  {
+    "id": "tidecaller",
+    "name": "Tidecaller",
+    "file": "tidecaller.svg",
+    "icon": "/icons/tidecaller.svg"
+  },
+  {
+    "id": "verdant",
+    "name": "Verdant",
+    "file": "verdant.svg",
+    "icon": "/icons/verdant.svg"
+  },
+  {
+    "id": "umbra",
+    "name": "Umbra",
+    "file": "umbra.svg",
+    "icon": "/icons/umbra.svg"
+  },
+  {
+    "id": "glacia",
+    "name": "Glacia",
+    "file": "glacia.svg",
+    "icon": "/icons/glacia.svg"
+  },
+  {
+    "id": "ironclad",
+    "name": "Ironclad",
+    "file": "ironclad.svg",
+    "icon": "/icons/ironclad.svg"
+  },
+  {
+    "id": "solara",
+    "name": "Solara",
+    "file": "solara.svg",
+    "icon": "/icons/solara.svg"
+  },
+  {
+    "id": "quake",
+    "name": "Quake",
+    "file": "quake.svg",
+    "icon": "/icons/quake.svg"
+  },
+  {
+    "id": "zephyr",
+    "name": "Zephyr",
+    "file": "zephyr.svg",
+    "icon": "/icons/zephyr.svg"
+  }
+]

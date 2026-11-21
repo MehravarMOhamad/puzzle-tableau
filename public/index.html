@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hero Puzzle Tableau</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14213d;--bg:#1b1f4b;--panel:#f2f5ff;--blue:#2563eb;--orange:#ff7a00;--gold:#ffd23f;--me:var(--blue);
+ --head:'Bangers','Impact',sans-serif;--body:'Atkinson Hyperlegible',system-ui,sans-serif}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;min-height:100vh;font-family:var(--body);color:var(--ink);
+ background:radial-gradient(circle,#ffffff14 1.5px,transparent 1.6px) 0 0/14px 14px,var(--bg)}
+button,input{font:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.card{background:var(--panel);border:3px solid var(--ink);border-radius:10px;box-shadow:5px 5px 0 var(--ink);padding:16px}
+.btn{background:var(--gold);color:var(--ink);border:3px solid var(--ink);border-radius:8px;padding:8px 14px;font-weight:700;box-shadow:3px 3px 0 var(--ink)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn.alt{background:#fff}.btn:disabled{opacity:.5;cursor:not-allowed}
+h1,h2{font-family:var(--head);letter-spacing:.04em;font-weight:400;margin:0}
+/* lobby */
+#lobby{max-width:480px;margin:5vh auto;padding:0 14px}
+#lobby h1{font-size:3.2rem;color:var(--gold);text-shadow:3px 3px 0 var(--ink);text-align:center;margin-bottom:14px}
+#lobby label{display:block;font-weight:700;margin:12px 0 4px}
+#lobby input[type=text]{width:100%;padding:9px;border:3px solid var(--ink);border-radius:8px;background:#fff}
+.row{display:flex;gap:8px}.row>input{flex:1}
+.slots{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.slots label{margin:0;border:3px solid var(--ink);border-radius:8px;padding:9px;background:#fff;text-align:center;cursor:pointer}
+.slots input{position:absolute;opacity:0}
+.slots label:has(input:checked){color:#fff}
+.slots label.s1:has(input:checked){background:var(--blue)}.slots label.s2:has(input:checked){background:var(--orange)}
+.slots label:has(input:focus-visible){outline:3px solid var(--gold)}
+.avatars{display:flex;flex-wrap:wrap;gap:6px}
+.avatars button{font-size:1.5rem;width:46px;height:46px;border:3px solid var(--ink);border-radius:50%;background:#fff}
+.avatars button[aria-pressed=true]{background:var(--gold)}
+#lerr{color:#b00020;font-weight:700;min-height:1.3em;margin:10px 0 0}
+#join{width:100%;margin-top:6px;font-size:1.1rem}
+/* game */
+#game{max-width:760px;margin:0 auto;padding:10px 12px 40px;display:flex;flex-direction:column;gap:12px;align-items:center}
+header{width:100%;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tag{font-family:var(--head);font-size:1.5rem;color:var(--gold);letter-spacing:.1em}
+.method{position:relative;display:flex;align-items:center;gap:8px;color:#fff;font-weight:700}
+.sw{position:relative;width:46px;height:26px;display:inline-block}
+.sw input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.sw span{position:absolute;inset:0;border:3px solid var(--ink);border-radius:20px;background:#fff;transition:.15s}
+.sw span::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--ink);transition:.15s}
+.sw input:checked+span{background:var(--orange)}.sw input:checked+span::after{left:22px}
+.sw input:disabled{cursor:not-allowed}.sw input:disabled+span{opacity:.55}
+.sw input:focus-visible+span{outline:3px solid var(--gold)}
+#hintbtn{width:26px;height:26px;border-radius:50%;border:3px solid var(--ink);background:var(--gold);font-weight:700;padding:0;line-height:1}
+#hint{position:absolute;top:36px;right:0;z-index:5;width:min(300px,86vw);background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius:8px;box-shadow:4px 4px 0 var(--ink);padding:10px;font-weight:400;font-size:.92rem}
+#scores{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chip{background:#fff;border:3px solid;border-radius:8px;padding:6px 10px;display:flex;align-items:center;gap:8px;min-width:0}
+.chip.s1{border-color:var(--blue)}.chip.s2{border-color:var(--orange)}
+.chip .av{font-size:1.6rem}.chip b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chip small{display:block;color:#444}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2ea44f;margin-right:5px}.dot.off{background:#999}
+#panel{width:min(94vw,560px);min-height:128px;display:flex;flex-direction:column;justify-content:center;gap:8px;border-color:var(--me)}
+#panel p{margin:0}
+#timer{height:12px;border:2px solid var(--ink);border-radius:8px;background:#fff;overflow:hidden}
+#timer i{display:block;height:100%;width:100%;background:var(--me)}
+#qtext{font-family:var(--head);font-size:2.4rem;letter-spacing:.05em}
+#ans{width:120px;padding:8px;border:3px solid var(--ink);border-radius:8px;font-size:1.2rem}
+#secs{width:70px;padding:5px;border:3px solid var(--ink);border-radius:8px;text-align:center}
+#board{width:min(94vw,560px);aspect-ratio:1;display:grid;grid-template-columns:repeat(10,1fr);gap:2px;border:4px solid var(--ink);background:var(--ink);box-shadow:6px 6px 0 #0008}
+#board.wait{filter:grayscale(.7) brightness(.8)}
+.cell{border:0;padding:0;aspect-ratio:1;position:relative;display:grid;place-items:center;font-size:clamp(.7rem,2.6vw,1.2rem);color:var(--ink);overflow:hidden;
+ background:repeating-linear-gradient(45deg,#c9d3f7 0 6px,#dbe2fb 6px 12px)}
+.cell:hover.s0{background:var(--gold)}
+.cell img{width:100%;height:100%;display:block}
+.cell.s2{background:var(--me);animation:pulse .9s infinite alternate;color:#fff}
+.cell.s3{background:repeating-linear-gradient(-45deg,#9aa 0 5px,#778 5px 10px);cursor:not-allowed}
+.cell.s4{background:#e8b4b4;color:#8a1020;font-weight:700;cursor:not-allowed}
+@keyframes pulse{to{filter:brightness(1.35)}}
+#guess{width:min(94vw,560px)}
+#guess h2{font-size:1.6rem;margin-bottom:2px}#guess p{margin:0 0 8px;font-size:.9rem}
+#heroes{height:230px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:4px}
+#heroes button{display:flex;align-items:center;gap:12px;text-align:left;background:#fff;border:3px solid var(--ink);border-radius:8px;padding:5px 10px;font-weight:700}
+#heroes button:hover:not(:disabled){background:var(--gold)}
+#heroes button:disabled{opacity:.45;text-decoration:line-through;cursor:not-allowed}
+#heroes img{width:48px;height:48px;flex:none}
+dialog{border:3px solid var(--ink);border-radius:10px;box-shadow:6px 6px 0 var(--ink);background:var(--panel);color:var(--ink);max-width:min(92vw,440px)}
+dialog::backdrop{background:#0009}
+dialog h2{font-size:2rem;margin-bottom:6px}dialog .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+#fullimg{width:100%;border:3px solid var(--ink);border-radius:8px;margin-top:8px}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;border:2px solid var(--gold);z-index:20;max-width:90vw}
+@media (prefers-reduced-motion:reduce){.cell.s2{animation:none}.sw span,.sw span::after{transition:none}}
+</style></head><body>
+
+<div id="lobby"><div class="card">
+ <h1>Hero Puzzle</h1>
+ <label for="room">Room code</label>
+ <div class="row"><input id="room" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="4 characters"><button class="btn" id="gen" type="button">Generate</button></div>
+ <label id="slotlbl">Who are you?</label>
+ <div class="slots" role="radiogroup" aria-labelledby="slotlbl">
+  <label class="s1"><input type="radio" name="slot" value="1" checked>Player 1 (Blue)</label>
+  <label class="s2"><input type="radio" name="slot" value="2">Player 2 (Orange)</label></div>
+ <label for="name">Your name</label><input id="name" type="text" maxlength="16" autocomplete="nickname">
+ <label id="avlbl">Avatar</label><div class="avatars" id="avatars" aria-labelledby="avlbl"></div>
+ <p id="lerr" role="alert"></p>
+ <button class="btn" id="join" type="button">Join / Start game</button>
+</div></div>
+
+<div id="game" hidden>
+ <header>
+  <button class="btn alt" id="copy" type="button">Copy invite link</button>
+  <span class="tag" id="roomtag"></span>
+  <div class="method">
+   <span>Method 1</span><label class="sw"><input type="checkbox" id="mtoggle" aria-label="Use method 2"><span></span></label><span>Method 2</span>
+   <button id="hintbtn" type="button" aria-expanded="false" aria-controls="hint" aria-label="How the methods work">?</button>
+   <div id="hint" role="tooltip" hidden>
+    <b>Method 1:</b> a cell you miss or run out of time on stays hidden from you until the game ends.<br><br>
+    <b>Method 2:</b> a cell you miss is shown to your opponent right away.<br><br>
+    <small>Player 1 can switch until the first cell is claimed.</small></div>
+  </div>
+ </header>
+ <div id="scores"></div>
+ <section id="panel" class="card" aria-live="polite">
+  <p id="pmsg"></p>
+  <div id="idle" hidden><label>Reserve time <input id="secs" type="number" min="5" max="120" value="20" inputmode="numeric"> seconds</label> <span>then tap a cell.</span></div>
+  <div id="solve" hidden>
+   <p><b id="cellname"></b> is yours for <b id="left"></b> s</p><div id="timer"><i></i></div>
+   <div id="qtext"></div>
+   <div class="row" style="align-items:center"><span id="eq">=</span><input id="ans" type="text" inputmode="numeric" autocomplete="off" aria-label="Your answer"><button class="btn" id="submit" type="button">Answer</button></div>
+  </div>
+  <button class="btn" id="again" type="button" hidden>Play again</button>
+ </section>
+ <div id="board" role="grid" aria-label="Puzzle board"></div>
+ <section id="guess" class="card"><h2>Who is behind the puzzle?</h2><p>Pick a hero to guess. One wrong guess is forgiven; the second loses.</p><div id="heroes"></div></section>
+</div>
+
+<dialog id="confirm"><h2>Lock it in?</h2><p id="ctext"></p><div class="acts"><button class="btn alt" id="cno" type="button">Cancel</button><button class="btn" id="cyes" type="button">Yes, that's my answer</button></div></dialog>
+<dialog id="end"><h2 id="etitle"></h2><p id="etext"></p><img id="fullimg" alt="The hidden hero"><div class="acts"><button class="btn alt" id="eclose" type="button">Look at the board</button><button class="btn" id="eagain" type="button">Play again</button></div></dialog>
+<div id="toast" hidden></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const CODE = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', AVS = ['🦸','🦹','🦊','🐺','🦅','🐉','🤖','🧙'];
+const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } };
+let ws, S = null, heroes = [], creds = null, pend = null, avatar = store.get('pt-av') || AVS[0], tick, toastT, pickHero = null;
+
+// ---------- lobby ----------
+const qs = new URLSearchParams(location.search);
+$('name').value = store.get('pt-name') || '';
+AVS.forEach(a => { const b = document.createElement('button'); b.type = 'button'; b.textContent = a; b.setAttribute('aria-label', 'Avatar ' + a);
+  b.setAttribute('aria-pressed', a === avatar); b.onclick = () => { avatar = a; [...$('avatars').children].forEach(x => x.setAttribute('aria-pressed', x === b)); }; $('avatars').appendChild(b); });
+if (qs.get('room')) { $('room').value = qs.get('room').toUpperCase().slice(0, 4); document.querySelector('input[name=slot][value="2"]').checked = true; $('lerr').textContent = 'You were invited. Check Player 2 (Orange), add your name and join.'; $('lerr').style.color = '#14213d'; }
+$('room').oninput = e => e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+$('gen').onclick = () => { $('room').value = Array.from({ length: 4 }, () => CODE[Math.floor(Math.random() * CODE.length)]).join(''); };
+const slotVal = () => +document.querySelector('input[name=slot]:checked').value;
+const lerr = (m, bad = true) => { $('lerr').textContent = m; $('lerr').style.color = bad ? '#b00020' : '#14213d'; };
+
+$('join').onclick = () => {
+  const room = $('room').value.trim().toUpperCase(), name = $('name').value.trim();
+  if (!/^[A-Z0-9]{4}$/.test(room)) return lerr('Enter a 4-character room code, or press Generate.');
+  if (!name) return lerr('Enter your name.');
+  store.set('pt-name', name); store.set('pt-av', avatar);
+  const slot = slotVal(), key = `pt-tok-${room}-${slot}`;
+  let token = store.get(key); if (!token) { token = crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now(); store.set(key, token); }
+  creds = { room, slot, name, avatar, token }; lerr('Joining…', false); connect();
+};
+function connect() {
+  clearTimeout(pend);
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+  ws.onopen = () => ws.send(JSON.stringify({ t: 'join', ...creds }));
+  ws.onclose = () => { if (S) { toast('Connection lost. Reconnecting…'); } pend = setTimeout(connect, 1500); };
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if (m.t === 'error') {
+      if (m.code === 'slot_taken') { const other = creds.slot === 1 ? 2 : 1; document.querySelector(`input[name=slot][value="${other}"]`).checked = true; creds = null; clearTimeout(pend); ws.onclose = null; ws.close(); S ? location.reload() : lerr(m.msg); }
+      else toast(m.msg);
+    } else if (m.t === 'state') onState(m);
+  };
+}
+const send = o => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
+
+// ---------- game ----------
+const cells = [];
+for (let i = 0; i < 100; i++) { const b = document.createElement('button'); b.type = 'button'; b.className = 'cell s0'; b.setAttribute('role', 'gridcell');
+  b.setAttribute('aria-label', `Row ${Math.floor(i / 10) + 1}, column ${i % 10 + 1}`); b.onclick = () => clickCell(i); cells.push(b); $('board').appendChild(b); }
+const cname = i => 'ABCDEFGHIJ'[i % 10] + (Math.floor(i / 10) + 1);
+fetch('/api/heroes').then(r => r.json()).then(h => { heroes = h; drawHeroes(); });
+
+function clickCell(i) {
+  if (!S || S.status !== 'playing') return toast(S && S.status === 'waiting' ? 'Waiting for the other player to join.' : 'The game is over.');
+  const c = S.cells[i];
+  if (c === 3) return toast('Your opponent is solving that cell.');
+  if (c === 4) return toast('You missed this cell. It stays hidden from you.');
+  if (c !== 0) return;
+  if (S.mine) return toast('Answer your current cell first.');
+  send({ t: 'claim', cell: i, secs: +$('secs').value });
+}
+function onState(s) {
+  const first = !S, newCell = !S || (S.mine && S.mine.cell) !== (s.mine && s.mine.cell);
+  S = s; S.deadline = s.mine ? Date.now() + s.mine.left : 0;
+  if (first) { $('lobby').hidden = true; $('game').hidden = false; document.documentElement.style.setProperty('--me', s.you === 1 ? 'var(--blue)' : 'var(--orange)'); }
+  $('roomtag').textContent = 'Room ' + s.room;
+  const mt = $('mtoggle'); mt.checked = s.method === 2; mt.disabled = s.you !== 1 || s.methodLocked;
+  mt.title = s.you !== 1 ? 'Only Player 1 can change the method' : s.methodLocked ? 'Locked once play starts' : '';
+  // scores
+  $('scores').replaceChildren(...s.players.map(p => { const d = document.createElement('div'); d.className = 'chip s' + p.slot;
+    if (p.empty) { d.textContent = `Waiting for Player ${p.slot}…`; return d; }
+    const av = document.createElement('span'); av.className = 'av'; av.textContent = p.avatar;
+    const t = document.createElement('div'), n = document.createElement('b'); n.textContent = p.name + (p.slot === s.you ? ' (you)' : '');
+    const sm = document.createElement('small'), dot = document.createElement('i'); dot.className = 'dot' + (p.online ? '' : ' off');
+    sm.append(dot, `${p.solved} tiles · wrong guesses ${p.strikes}/2`); t.append(n, sm); d.append(av, t); return d; }));
+  // board
+  $('board').classList.toggle('wait', s.status === 'waiting');
+  s.cells.forEach((c, i) => { const k = c + '-' + s.gameId, b = cells[i]; if (b.dataset.k === k) return; b.dataset.k = k; b.className = 'cell s' + c; b.replaceChildren();
+    if (c === 1) { const im = new Image(); im.alt = ''; im.src = `/tile/${s.room}/${i}?t=${creds.token}&g=${s.gameId}`; b.appendChild(im); }
+    else b.textContent = ['', '', '⏱', '🔒', '✕'][c]; });
+  // panel
+  const playing = s.status === 'playing';
+  $('idle').hidden = !(playing && !s.mine); $('solve').hidden = !s.mine; $('again').hidden = s.status !== 'over';
+  $('pmsg').textContent = s.status === 'waiting' ? 'Waiting for the other player. Send them the invite link.' : s.status === 'over' ? 'Game over.' : s.mine ? '' : 'Pick how long you get, then tap a cell and solve a problem to reveal it.';
+  if (s.mine) { $('cellname').textContent = 'Cell ' + cname(s.mine.cell); $('qtext').textContent = s.mine.q;
+    if (newCell) { $('ans').value = ''; $('ans').focus(); } }
+  drawHeroes();
+  // end dialog
+  if (s.status === 'over') { if (!$('end').open && !S.shown) { S.shown = true;
+      const won = s.winner === s.you, w = s.players.find(p => p.slot === s.winner);
+      $('etitle').textContent = won ? 'You win!' : (w ? w.name : 'Your opponent') + ' wins';
+      $('etext').textContent = `It was ${s.heroName}. ${won ? 'You' : (w ? w.name : 'They')} won because ${s.reason}.`;
+      $('fullimg').src = `/full/${s.room}?t=${creds.token}`; $('end').showModal(); } }
+  else { if ($('end').open) $('end').close(); }
+}
+function drawHeroes() {
+  const box = $('heroes'); if (!heroes.length) return; const dis = !S || S.status !== 'playing';
+  if (!box.children.length) heroes.forEach(h => { const b = document.createElement('button'); b.type = 'button'; b.dataset.id = h.id;
+    const im = new Image(); im.src = h.icon; im.alt = ''; const n = document.createElement('span'); n.textContent = h.name; b.append(im, n);
+    b.onclick = () => askGuess(h); box.appendChild(b); });
+  [...box.children].forEach(b => b.disabled = dis || (S.wrong || []).includes(b.dataset.id));
+}
+function askGuess(h) {
+  pickHero = h; const last = S.players.find(p => p.slot === S.you).strikes === 1;
+  $('ctext').textContent = last ? `Answer "${h.name}"? This is your last chance: another wrong guess loses the game.` : `Answer "${h.name}"? You can afford one wrong guess, not two.`;
+  $('confirm').showModal();
+}
+$('cno').onclick = () => $('confirm').close();
+$('cyes').onclick = () => { $('confirm').close(); send({ t: 'guess', hero: pickHero.id }); };
+const submit = () => { if ($('ans').value.trim()) send({ t: 'answer', value: $('ans').value }); };
+$('submit').onclick = submit; $('ans').onkeydown = e => e.key === 'Enter' && submit();
+$('mtoggle').onchange = e => send({ t: 'method', method: e.target.checked ? 2 : 1 });
+$('hintbtn').onclick = () => { const h = $('hint'); h.hidden = !h.hidden; $('hintbtn').setAttribute('aria-expanded', !h.hidden); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('hint').hidden = true; } });
+$('copy').onclick = async () => { const u = `${location.origin}/?room=${S.room}`; try { await navigator.clipboard.writeText(u); toast('Invite link copied.'); } catch { prompt('Copy this invite link:', u); } };
+$('again').onclick = $('eagain').onclick = () => { send({ t: 'newgame' }); };
+$('eclose').onclick = () => $('end').close();
+function toast(m) { const t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+setInterval(() => { if (!S || !S.mine) return; const left = Math.max(0, S.deadline - Date.now());
+  $('left').textContent = Math.ceil(left / 1000); $('timer').firstElementChild.style.width = (left / (S.mine.secs * 1000) * 100) + '%'; }, 150);
+</script></body></html>
