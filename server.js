@@ -1,26 +1,61 @@
 const express = require('express'), http = require('http'), path = require('path'), fs = require('fs');
 const { WebSocketServer } = require('ws');
 const Q = require('./questions');
-const HEROES = require('./assets/heroes.json');
+const sharp = require('sharp');
 
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 const rooms = new Map();
-const MIME = { '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
-const uriCache = new Map();
 const rnd = n => Math.floor(Math.random() * n);
 
-function heroUri(h) {
-  if (!uriCache.has(h.id)) {
-    const f = path.join(__dirname, 'assets', 'heroes', h.file);
-    uriCache.set(h.id, `data:${MIME[path.extname(f).toLowerCase()] || 'image/png'};base64,${fs.readFileSync(f).toString('base64')}`);
-  }
-  return uriCache.get(h.id);
+// ---- pictures: every image in assets/pictures is a character (file name = display name).
+// If that folder is empty/missing, the built-in samples in assets/heroes are used.
+const EXT = /\.(svg|png|jpe?g|webp|avif|gif)$/i;
+function scan() {
+  const list = d => (fs.existsSync(d) ? fs.readdirSync(d).filter(f => EXT.test(f)).sort() : []);
+  let dir = path.join(__dirname, 'assets', 'pictures'), files = list(dir);
+  if (!files.length) { dir = path.join(__dirname, 'assets', 'heroes'); files = list(dir); }
+  const used = new Set();
+  return files.map(f => {
+    const base = f.replace(EXT, '');
+    let id = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'pic';
+    while (used.has(id)) id += '-x'; used.add(id);
+    const name = base.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/(^|\s)(\S)/g, (m, a, c) => a + c.toUpperCase());
+    return { id, name, file: path.join(dir, f) };
+  });
+}
+const HEROES = scan();
+if (!HEROES.length) throw new Error('No pictures found. Put images in assets/pictures.');
+console.log(`Loaded ${HEROES.length} pictures:`, HEROES.map(h => h.name).join(', '));
+
+// Each picture is cropped to a square (centre, "cover"), then cut into 100 tiles. Built once, cached.
+const prep = new Map(), icons = new Map();
+function prepare(h) {
+  if (!prep.has(h.id)) prep.set(h.id, (async () => {
+    const { data, info } = await sharp(h.file, { density: 200 }).rotate().flatten({ background: '#ffffff' })
+      .resize(1500, 1500, { fit: 'cover', position: 'centre' }).raw().toBuffer({ resolveWithObject: true });
+    const raw = { raw: { width: info.width, height: info.height, channels: info.channels } };
+    const tiles = await Promise.all(Array.from({ length: 100 }, (_, i) =>
+      sharp(data, raw).extract({ left: (i % 10) * 150, top: Math.floor(i / 10) * 150, width: 150, height: 150 }).jpeg({ quality: 85 }).toBuffer()));
+    const full = await sharp(data, raw).resize(900, 900).jpeg({ quality: 88 }).toBuffer();
+    return { tiles, full };
+  })().catch(e => { prep.delete(h.id); throw e; }));
+  return prep.get(h.id);
+}
+function iconOf(h) {
+  if (!icons.has(h.id)) icons.set(h.id, sharp(h.file, { density: 100 }).rotate().flatten({ background: '#ffffff' })
+    .resize(160, 160, { fit: 'cover', position: 'centre' }).jpeg({ quality: 85 }).toBuffer().catch(e => { icons.delete(h.id); throw e; }));
+  return icons.get(h.id);
 }
 
-app.get('/api/heroes', (req, res) => res.json(HEROES.map(h => ({ id: h.id, name: h.name, icon: h.icon }))));
+app.get('/api/heroes', (req, res) => res.json(HEROES.map(h => ({ id: h.id, name: h.name, icon: `/icon/${h.id}` }))));
+app.get('/icon/:id', async (req, res) => {
+  const h = HEROES.find(x => x.id === req.params.id);
+  if (!h) return res.sendStatus(404);
+  try { res.type('jpeg').set('Cache-Control', 'public, max-age=86400').send(await iconOf(h)); } catch (e) { console.error(e); res.sendStatus(500); }
+});
 app.get('/healthz', (req, res) => res.send('ok'));
 
 function authed(req) {
@@ -29,19 +64,17 @@ function authed(req) {
   return r && slot ? { r, slot } : null;
 }
 // A tile is only served if the requesting player has earned it (or the game is over).
-app.get('/tile/:room/:cell', (req, res) => {
+app.get('/tile/:room/:cell', async (req, res) => {
   const a = authed(req), c = parseInt(req.params.cell, 10);
   if (!a || !(c >= 0 && c < 100)) return res.sendStatus(404);
   if (a.r.status !== 'over' && !a.r.rev[a.slot].has(c)) return res.sendStatus(403);
-  const x = (c % 10) * 100, y = Math.floor(c / 10) * 100;
-  res.type('image/svg+xml').set('Cache-Control', 'private, max-age=3600').send(
-    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${x} ${y} 100 100" preserveAspectRatio="none">` +
-    `<image href="${heroUri(HEROES[a.r.hero])}" xlink:href="${heroUri(HEROES[a.r.hero])}" width="1000" height="1000" preserveAspectRatio="xMidYMid slice"/></svg>`);
+  try { const p = await prepare(HEROES[a.r.hero]); res.type('jpeg').set('Cache-Control', 'private, max-age=3600').send(p.tiles[c]); }
+  catch (e) { console.error(e); res.sendStatus(500); }
 });
-app.get('/full/:room', (req, res) => {
+app.get('/full/:room', async (req, res) => {
   const a = authed(req);
   if (!a || a.r.status !== 'over') return res.sendStatus(403);
-  res.sendFile(path.join(__dirname, 'assets', 'heroes', HEROES[a.r.hero].file));
+  try { res.type('jpeg').send((await prepare(HEROES[a.r.hero])).full); } catch (e) { console.error(e); res.sendStatus(500); }
 });
 
 function resetGame(r) {
@@ -49,7 +82,7 @@ function resetGame(r) {
   r.refresh = null;
   let h; do { h = rnd(HEROES.length); } while (HEROES.length > 1 && h === r.hero);
   Object.assign(r, {
-    hero: h, gameId: (r.gameId || 0) + 1, status: 'waiting', started: false, winner: 0, reason: '',
+    hero: (prepare(HEROES[h]).catch(() => {}), h), gameId: (r.gameId || 0) + 1, status: 'waiting', started: false, winner: 0, reason: '',
     rev: { 1: new Set(), 2: new Set() }, failed: { 1: new Set(), 2: new Set() },
     strikes: { 1: 0, 2: 0 }, wrong: { 1: [], 2: [] },
   });
@@ -75,7 +108,7 @@ function view(r, slot) {
     t: 'state', room: r.id, you: slot, gameId: r.gameId, status: r.status, method: r.method,
     methodLocked: r.started, refresh: r.refresh ? { from: r.refresh.from } : null, cells, wrong: r.wrong[slot], winner: r.winner, reason: r.reason,
     heroName: over ? HEROES[r.hero].name : null,
-    mine: mine ? { cell: mine.cell, left: mine.expires - Date.now(), secs: mine.secs, q: mine.q.text } : null,
+    mine: mine ? { cell: mine.cell, left: mine.expires - Date.now(), secs: mine.secs, tries: mine.tries, q: mine.q.text } : null,
     players: [1, 2].map(s => r.players[s] ? {
       slot: s, name: r.players[s].name, avatar: r.players[s].avatar, online: !!(r.players[s].ws && r.players[s].ws.readyState === 1),
       strikes: r.strikes[s], solved: r.rev[s].size } : { slot: s, empty: true }),
@@ -145,7 +178,7 @@ wss.on('connection', ws => {
       if (r.res[o] && r.res[o].cell === c) return err(ws, 'reserved', 'Your opponent is solving that cell.');
       r.started = true;
       const q = Q.generate(r.category);
-      const res = { cell: c, secs, q, expires: Date.now() + secs * 1000 };
+      const res = { cell: c, secs, q, tries: 0, expires: Date.now() + secs * 1000 };
       res.timer = setTimeout(() => { if (r.res[slot] === res && r.status === 'playing') { fail(r, slot, c); broadcast(r); } }, secs * 1000 + 150);
       r.res[slot] = res;
       return broadcast(r);
@@ -154,7 +187,9 @@ wss.on('connection', ws => {
       const res = r.res[slot];
       if (!res) return;
       if (Date.now() > res.expires + 300) { fail(r, slot, res.cell); return broadcast(r); }
-      if (Q.check(res.q, m.value)) { clearRes(r, slot); r.rev[slot].add(res.cell); } else fail(r, slot, res.cell);
+      if (Q.check(res.q, m.value)) { clearRes(r, slot); r.rev[slot].add(res.cell); }
+      else if (res.tries < 1) res.tries++; // first wrong answer in a cell: try again (same question, same clock)
+      else fail(r, slot, res.cell);
       return broadcast(r);
     }
     if (m.t === 'guess') {

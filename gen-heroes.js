@@ -59,7 +59,5 @@ const icon = (h) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 12
 
 H.forEach((h, n) => {
   fs.writeFileSync(`assets/heroes/${h.id}.svg`, big(h, n));
-  fs.writeFileSync(`public/icons/${h.id}.svg`, icon(h));
 });
-fs.writeFileSync('assets/heroes.json', JSON.stringify(H.map(h => ({ id:h.id, name:h.name, file:`${h.id}.svg`, icon:`/icons/${h.id}.svg` })), null, 2));
 console.log('Generated', H.length, 'heroes');

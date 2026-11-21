@@ -3,7 +3,16 @@
   "version": "1.0.0",
   "description": "Two-player multiplayer puzzle tableau: solve math to reveal tiles, guess the hero.",
   "main": "server.js",
-  "scripts": { "start": "node server.js", "gen:heroes": "node gen-heroes.js" },
-  "engines": { "node": ">=18" },
-  "dependencies": { "express": "^4.19.2", "ws": "^8.18.0" }
+  "scripts": {
+    "start": "node server.js",
+    "gen:heroes": "node gen-heroes.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "sharp": "^0.35.5",
+    "ws": "^8.18.0"
+  }
 }

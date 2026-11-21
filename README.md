@@ -18,6 +18,7 @@ npm start        # http://localhost:3000
 ## Project layout
 - `server.js` rooms, rules, timers, WebSocket sync. Tiles are served only to players who earned them.
 - `questions.js` question depository: add a category to `CATEGORIES` (a function returning `{text, answer}`).
-- `assets/heroes/` + `assets/heroes.json` private puzzle pictures (svg/png/jpg/webp). `public/icons/` small answer-list portraits.
-- `gen-heroes.js` regenerates the 10 original sample heroes. Replace with your own images by editing `heroes.json` (keep photos under ~800px; each tile request embeds the image).
+- `assets/pictures/` YOUR pictures (jpg/png/webp/svg). File name = displayed name. Cropped to a square and cut into 10x10 tiles automatically; small portraits are made from the same file.
+- `assets/heroes/` built-in sample heroes, used only while `assets/pictures/` has no images.
+- `gen-heroes.js` regenerates the 10 sample heroes.
 - `public/index.html` the whole client.

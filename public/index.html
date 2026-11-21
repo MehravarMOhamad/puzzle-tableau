@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hero Puzzle Tableau</title>
+<title>Puzzle Tableau</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -71,13 +71,15 @@ header{width:100%;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justif
 .cell.s3{background:repeating-linear-gradient(-45deg,#9aa 0 5px,#778 5px 10px);cursor:not-allowed}
 .cell.s4{background:#e8b4b4;color:#8a1020;font-weight:700;cursor:not-allowed}
 @keyframes pulse{to{filter:brightness(1.35)}}
-#guess{width:min(94vw,560px)}
+#guess{width:min(94vw,760px)}
 #guess h2{font-size:1.6rem;margin-bottom:2px}#guess p{margin:0 0 8px;font-size:.9rem}
-#heroes{height:230px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:4px}
-#heroes button{display:flex;align-items:center;gap:12px;text-align:left;background:#fff;border:3px solid var(--ink);border-radius:8px;padding:5px 10px;font-weight:700}
+#heroes{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;max-height:440px;overflow-y:auto;padding:2px}
+#heroes button{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;background:#fff;border:3px solid var(--ink);border-radius:8px;padding:6px 4px;font-weight:700;font-size:.82rem;line-height:1.15;min-width:0}
+#heroes span{overflow-wrap:anywhere}
+.oops{color:#b00020;font-weight:700}
 #heroes button:hover:not(:disabled){background:var(--gold)}
 #heroes button:disabled{opacity:.45;text-decoration:line-through;cursor:not-allowed}
-#heroes img{width:48px;height:48px;flex:none}
+#heroes img{width:68px;height:68px;flex:none;border-radius:50%;border:2px solid var(--ink);object-fit:cover}
 dialog{border:3px solid var(--ink);border-radius:10px;box-shadow:6px 6px 0 var(--ink);background:var(--panel);color:var(--ink);max-width:min(92vw,440px)}
 dialog::backdrop{background:#0009}
 dialog h2{font-size:2rem;margin-bottom:6px}dialog .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
@@ -87,7 +89,7 @@ dialog h2{font-size:2rem;margin-bottom:6px}dialog .acts{display:flex;gap:8px;jus
 </style></head><body>
 
 <div id="lobby"><div class="card">
- <h1>Hero Puzzle</h1>
+ <h1>Puzzle Tableau</h1>
  <label for="room">Room code</label>
  <div class="row"><input id="room" type="text" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="4 characters"><button class="btn" id="gen" type="button">Generate</button></div>
  <label id="slotlbl">Who are you?</label>
@@ -120,13 +122,14 @@ dialog h2{font-size:2rem;margin-bottom:6px}dialog .acts{display:flex;gap:8px;jus
   <div id="idle" hidden><label>Reserve time <input id="secs" type="number" min="5" max="120" value="20" inputmode="numeric"> seconds</label> <span>then tap a cell.</span></div>
   <div id="solve" hidden>
    <p><b id="cellname"></b> is yours for <b id="left"></b> s</p><div id="timer"><i></i></div>
+   <p id="tries" hidden></p>
    <div id="qtext"></div>
    <div class="row" style="align-items:center"><span id="eq">=</span><input id="ans" type="text" inputmode="numeric" autocomplete="off" aria-label="Your answer"><button class="btn" id="submit" type="button">Answer</button></div>
   </div>
   <button class="btn" id="again" type="button" hidden>Play again</button>
  </section>
  <div id="board" role="grid" aria-label="Puzzle board"></div>
- <section id="guess" class="card"><h2>Who is behind the puzzle?</h2><p>Pick a hero to guess. One wrong guess is forgiven; the second loses.</p><div id="heroes"></div></section>
+ <section id="guess" class="card"><h2>Who is behind the puzzle?</h2><p>Tap a portrait to guess. One wrong guess is forgiven; the second loses.</p><div id="heroes"></div></section>
 </div>
 
 <dialog id="confirm"><h2>Lock it in?</h2><p id="ctext"></p><div class="acts"><button class="btn alt" id="cno" type="button">Cancel</button><button class="btn" id="cyes" type="button">Yes, that's my answer</button></div></dialog>
@@ -195,8 +198,9 @@ function clickCell(i) {
 function onState(s) {
   if (S && S.mine && !s.mine && S.gameId === s.gameId) {
     const c = s.cells[S.mine.cell], n = cname(S.mine.cell);
-    toast(c === 1 ? `Correct! Cell ${n} revealed.` : Date.now() >= S.deadline - 300 ? `Time's up. Cell ${n} is missed.` : `Wrong answer. Cell ${n} is missed.`);
+    toast(c === 1 ? `Correct! Cell ${n} revealed.` : Date.now() >= S.deadline - 300 ? `Time's up. Cell ${n} is missed.` : `Wrong again. Cell ${n} is missed.`);
   }
+  if (S && S.mine && s.mine && S.mine.cell === s.mine.cell && s.mine.tries > S.mine.tries) { toast('Oops, wrong answer. Try again!'); $('ans').value = ''; $('ans').focus(); }
   const first = !S, newCell = !S || (S.mine && S.mine.cell) !== (s.mine && s.mine.cell);
   S = s; S.deadline = s.mine ? Date.now() + s.mine.left : 0;
   if (first) { $('lobby').hidden = true; $('game').hidden = false; document.documentElement.style.setProperty('--me', s.you === 1 ? 'var(--blue)' : 'var(--orange)'); }
@@ -220,6 +224,7 @@ function onState(s) {
   $('idle').hidden = !(playing && !s.mine); $('solve').hidden = !s.mine; $('again').hidden = s.status !== 'over';
   $('pmsg').textContent = s.status === 'waiting' ? 'Waiting for the other player. Send them the invite link.' : s.status === 'over' ? 'Game over.' : s.mine ? '' : 'Pick how long you get, then tap a cell and solve a problem to reveal it.';
   if (s.mine) { $('cellname').textContent = 'Cell ' + cname(s.mine.cell); $('qtext').textContent = s.mine.q;
+    $('tries').hidden = false; $('tries').className = s.mine.tries ? 'oops' : ''; $('tries').textContent = s.mine.tries ? 'Oops, wrong answer. Try again! This is your last try in this cell.' : 'You may get one wrong answer in each cell.';
     if (newCell) { $('ans').value = ''; $('ans').focus(); } }
   drawHeroes();
   // refresh-board request
