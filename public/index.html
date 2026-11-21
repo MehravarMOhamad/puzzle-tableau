@@ -103,6 +103,7 @@ dialog h2{font-size:2rem;margin-bottom:6px}dialog .acts{display:flex;gap:8px;jus
 <div id="game" hidden>
  <header>
   <button class="btn alt" id="copy" type="button">Copy invite link</button>
+  <button class="btn alt" id="refresh" type="button">Refresh board</button>
   <span class="tag" id="roomtag"></span>
   <div class="method">
    <span>Method 1</span><label class="sw"><input type="checkbox" id="mtoggle" aria-label="Use method 2"><span></span></label><span>Method 2</span>
@@ -129,6 +130,7 @@ dialog h2{font-size:2rem;margin-bottom:6px}dialog .acts{display:flex;gap:8px;jus
 </div>
 
 <dialog id="confirm"><h2>Lock it in?</h2><p id="ctext"></p><div class="acts"><button class="btn alt" id="cno" type="button">Cancel</button><button class="btn" id="cyes" type="button">Yes, that's my answer</button></div></dialog>
+<dialog id="rdlg"><h2>Refresh the board?</h2><p id="rtext"></p><div class="acts"><button class="btn alt" id="rno" type="button">Decline</button><button class="btn" id="ryes" type="button">Accept</button></div></dialog>
 <dialog id="end"><h2 id="etitle"></h2><p id="etext"></p><img id="fullimg" alt="The hidden hero"><div class="acts"><button class="btn alt" id="eclose" type="button">Look at the board</button><button class="btn" id="eagain" type="button">Play again</button></div></dialog>
 <div id="toast" hidden></div>
 
@@ -160,11 +162,12 @@ $('join').onclick = () => {
 };
 function connect() {
   clearTimeout(pend);
-  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
-  ws.onopen = () => ws.send(JSON.stringify({ t: 'join', ...creds }));
-  ws.onclose = () => { if (S) { toast('Connection lost. Reconnecting…'); } pend = setTimeout(connect, 1500); };
-  ws.onmessage = e => {
+  const w = ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+  w.onopen = () => { w.send(JSON.stringify({ t: 'join', ...creds })); };
+  w.onclose = () => { if (w !== ws) return; if (S) toast('Connection lost. Reconnecting…'); pend = setTimeout(connect, 1500); };
+  w.onmessage = e => {
     const m = JSON.parse(e.data);
+    if (m.t === 'notice') return toast(m.msg);
     if (m.t === 'error') {
       if (m.code === 'slot_taken') { const other = creds.slot === 1 ? 2 : 1; document.querySelector(`input[name=slot][value="${other}"]`).checked = true; creds = null; clearTimeout(pend); ws.onclose = null; ws.close(); S ? location.reload() : lerr(m.msg); }
       else toast(m.msg);
@@ -190,6 +193,10 @@ function clickCell(i) {
   send({ t: 'claim', cell: i, secs: +$('secs').value });
 }
 function onState(s) {
+  if (S && S.mine && !s.mine && S.gameId === s.gameId) {
+    const c = s.cells[S.mine.cell], n = cname(S.mine.cell);
+    toast(c === 1 ? `Correct! Cell ${n} revealed.` : Date.now() >= S.deadline - 300 ? `Time's up. Cell ${n} is missed.` : `Wrong answer. Cell ${n} is missed.`);
+  }
   const first = !S, newCell = !S || (S.mine && S.mine.cell) !== (s.mine && s.mine.cell);
   S = s; S.deadline = s.mine ? Date.now() + s.mine.left : 0;
   if (first) { $('lobby').hidden = true; $('game').hidden = false; document.documentElement.style.setProperty('--me', s.you === 1 ? 'var(--blue)' : 'var(--orange)'); }
@@ -215,6 +222,11 @@ function onState(s) {
   if (s.mine) { $('cellname').textContent = 'Cell ' + cname(s.mine.cell); $('qtext').textContent = s.mine.q;
     if (newCell) { $('ans').value = ''; $('ans').focus(); } }
   drawHeroes();
+  // refresh-board request
+  const rb = $('refresh'), mineReq = s.refresh && s.refresh.from === s.you, theirs = s.refresh && !mineReq;
+  rb.textContent = mineReq ? 'Cancel refresh request' : 'Refresh board'; rb.disabled = s.status === 'waiting' || !!theirs;
+  if (theirs) { const o = s.players.find(p => p.slot === s.refresh.from); $('rtext').textContent = `${o ? o.name : 'Your opponent'} wants a fresh board: a new picture and everyone's progress reset. Accept?`; if (!$('rdlg').open) $('rdlg').showModal(); }
+  else if ($('rdlg').open) $('rdlg').close();
   // end dialog
   if (s.status === 'over') { if (!$('end').open && !S.shown) { S.shown = true;
       const won = s.winner === s.you, w = s.players.find(p => p.slot === s.winner);
@@ -238,12 +250,16 @@ function askGuess(h) {
 $('cno').onclick = () => $('confirm').close();
 $('cyes').onclick = () => { $('confirm').close(); send({ t: 'guess', hero: pickHero.id }); };
 const submit = () => { if ($('ans').value.trim()) send({ t: 'answer', value: $('ans').value }); };
-$('submit').onclick = submit; $('ans').onkeydown = e => e.key === 'Enter' && submit();
+$('submit').onclick = submit; $('ans').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 $('mtoggle').onchange = e => send({ t: 'method', method: e.target.checked ? 2 : 1 });
 $('hintbtn').onclick = () => { const h = $('hint'); h.hidden = !h.hidden; $('hintbtn').setAttribute('aria-expanded', !h.hidden); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('hint').hidden = true; } });
 $('copy').onclick = async () => { const u = `${location.origin}/?room=${S.room}`; try { await navigator.clipboard.writeText(u); toast('Invite link copied.'); } catch { prompt('Copy this invite link:', u); } };
 $('again').onclick = $('eagain').onclick = () => { send({ t: 'newgame' }); };
+$('refresh').onclick = () => { if (S.refresh && S.refresh.from === S.you) send({ t: 'refresh_cancel' }); else { send({ t: 'refresh_request' }); toast('Request sent. Waiting for your opponent to confirm.'); } };
+$('ryes').onclick = () => { $('rdlg').close(); send({ t: 'refresh_reply', accept: true }); };
+$('rno').onclick = () => { $('rdlg').close(); send({ t: 'refresh_reply', accept: false }); };
+$('rdlg').addEventListener('cancel', () => send({ t: 'refresh_reply', accept: false }));
 $('eclose').onclick = () => $('end').close();
 function toast(m) { const t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
 setInterval(() => { if (!S || !S.mine) return; const left = Math.max(0, S.deadline - Date.now());
