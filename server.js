@@ -85,7 +85,7 @@ function resetGame(r) {
   let h; do { h = rnd(HEROES.length); } while (HEROES.length > 1 && h === r.hero);
   Object.assign(r, {
     hero: (prepare(HEROES[h]).catch(() => {}), h), gameId: crypto.randomBytes(6).toString('hex'), status: 'waiting', started: false, winner: 0, reason: '',
-    rev: { 1: new Set(), 2: new Set() }, failed: { 1: new Set(), 2: new Set() },
+    rev: { 1: new Set(), 2: new Set() }, solved: { 1: new Set(), 2: new Set() }, failed: { 1: new Set(), 2: new Set() },
     strikes: { 1: 0, 2: 0 }, wrong: { 1: [], 2: [] },
   });
   [1, 2].forEach(s => clearRes(r, s));
@@ -96,7 +96,7 @@ function clearRes(r, s) { if (r.res && r.res[s]) { clearTimeout(r.res[s].timer);
 
 function getRoom(id) {
   if (!rooms.has(id)) {
-    const r = { id, method: 1, category: 'fractions', players: {}, res: { 1: null, 2: null }, last: Date.now() };
+    const r = { id, method: 1, category: 'fractions', lockSolved: false, players: {}, res: { 1: null, 2: null }, last: Date.now() };
     resetGame(r); rooms.set(id, r);
   }
   return rooms.get(id);
@@ -105,10 +105,10 @@ function getRoom(id) {
 function view(r, slot) {
   const o = slot === 1 ? 2 : 1, over = r.status === 'over', mine = r.res[slot];
   const cells = Array.from({ length: 100 }, (_, i) =>
-    over || r.rev[slot].has(i) ? 1 : mine && mine.cell === i ? 2 : r.res[o] && r.res[o].cell === i ? 3 : r.failed[slot].has(i) ? 4 : 0);
+    over || r.rev[slot].has(i) ? 1 : mine && mine.cell === i ? 2 : r.res[o] && r.res[o].cell === i ? 3 : r.lockSolved && r.solved[o].has(i) ? 5 : r.failed[slot].has(i) ? 4 : 0); // 5 = locked because the opponent solved it
   return {
     t: 'state', room: r.id, you: slot, gameId: r.gameId, status: r.status, method: r.method,
-    methodLocked: r.started, refresh: r.refresh ? { from: r.refresh.from } : null, cells, wrong: r.wrong[slot], winner: r.winner, reason: r.reason,
+    methodLocked: r.started, lockSolved: r.lockSolved, refresh: r.refresh ? { from: r.refresh.from } : null, cells, wrong: r.wrong[slot], winner: r.winner, reason: r.reason,
     heroName: over ? HEROES[r.hero].name : null,
     mine: mine ? { cell: mine.cell, left: mine.expires - Date.now(), secs: mine.secs, tries: mine.tries, q: mine.q.text, hint: mine.q.hint || '' } : null,
     players: [1, 2].map(s => r.players[s] ? {
@@ -155,6 +155,7 @@ wss.on('connection', ws => {
     if (!room) return;
     const r = room, o = slot === 1 ? 2 : 1;
     if (m.t === 'method' && slot === 1 && !r.started && (m.method === 1 || m.method === 2)) { r.method = m.method; return broadcast(r); }
+    if (m.t === 'lock' && slot === 1 && !r.started) { r.lockSolved = !!m.on; return broadcast(r); }
     if (m.t === 'newgame' && r.status === 'over') { resetGame(r); return broadcast(r); }
     if (m.t === 'refresh_request') {
       if (r.status === 'waiting' || !r.players[o]) return err(ws, 'no_opp', 'Wait until both players have joined.');
@@ -176,6 +177,7 @@ wss.on('connection', ws => {
       const c = parseInt(m.cell, 10), secs = Math.min(120, Math.max(5, parseInt(m.secs, 10) || 20));
       if (!(c >= 0 && c < 100)) return;
       if (r.res[slot]) return err(ws, 'busy', 'Finish your current cell first.');
+      if (r.lockSolved && r.solved[o].has(c)) return err(ws, 'locked', 'Your opponent already solved that cell, so it is locked for you.');
       if (r.rev[slot].has(c) || r.failed[slot].has(c)) return err(ws, 'unavailable', 'That cell is not available to you.');
       if (r.res[o] && r.res[o].cell === c) return err(ws, 'reserved', 'Your opponent is solving that cell.');
       r.started = true;
@@ -189,7 +191,9 @@ wss.on('connection', ws => {
       const res = r.res[slot];
       if (!res) return;
       if (Date.now() > res.expires + 300) { fail(r, slot, res.cell); return broadcast(r); }
-      if (Q.check(res.q, m.value)) { clearRes(r, slot); r.rev[slot].add(res.cell); }
+      if (!Q.valid(res.q, m.value)) return err(ws, 'format', 'Type a fraction like 5/6, or a decimal like 0.5. (Not counted as a wrong try.)');
+      if (Q.near(res.q, m.value)) return err(ws, 'simplify', 'That value is right, but write it in simplest form. (Not counted as a wrong try.)');
+      if (Q.check(res.q, m.value)) { clearRes(r, slot); r.rev[slot].add(res.cell); r.solved[slot].add(res.cell); }
       else if (res.tries < 1) res.tries++; // first wrong answer in a cell: try again (same question, same clock)
       else fail(r, slot, res.cell);
       return broadcast(r);
