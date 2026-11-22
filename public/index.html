@@ -71,6 +71,9 @@ header{width:100%;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justif
 .cell:hover.s0{background:var(--gold)}
 .cell img{width:100%;height:100%;display:block}
 .cell.s2{background:var(--me);animation:pulse .9s infinite alternate;color:#fff}
+.cell.s5{background:repeating-linear-gradient(45deg,#1b1f4b 0 6px,#2a3170 6px 12px);color:var(--gold);cursor:not-allowed;box-shadow:inset 0 0 0 3px var(--opp)}
+.lockrule{display:flex;align-items:center;gap:6px;color:#fff;font-weight:700;font-size:.9rem;width:100%}
+.lockrule input{width:18px;height:18px;accent-color:var(--gold)}
 .cell.s3{background:repeating-linear-gradient(-45deg,#9aa 0 5px,#778 5px 10px);cursor:not-allowed}
 .cell.s4{background:#e8b4b4;color:#8a1020;font-weight:700;cursor:not-allowed}
 @keyframes pulse{to{filter:brightness(1.35)}}
@@ -110,13 +113,15 @@ dialog h2{font-size:2rem;margin-bottom:6px}dialog .acts{display:flex;gap:8px;jus
   <button class="btn alt" id="copy" type="button">Copy invite link</button>
   <button class="btn alt" id="refresh" type="button">Refresh board</button>
   <span class="tag" id="roomtag"></span>
+  <label class="lockrule"><input type="checkbox" id="lockrule"> <span>🔒 Locking rule: every cell one player solves is locked for the other player</span></label>
   <div class="method">
    <span>Method 1</span><label class="sw"><input type="checkbox" id="mtoggle" aria-label="Use method 2"><span></span></label><span>Method 2</span>
    <button id="hintbtn" type="button" aria-expanded="false" aria-controls="hint" aria-label="How the methods work">?</button>
    <div id="hint" role="tooltip" hidden>
     <b>Method 1:</b> a cell you miss or run out of time on stays hidden from you until the game ends.<br><br>
     <b>Method 2:</b> a cell you miss is shown to your opponent right away.<br><br>
-    <small>Player 1 can switch until the first cell is claimed.</small></div>
+    <b>Locking rule:</b> when ticked, a cell that one player solves is locked for the other player and shows a 🔒.<br><br>
+    <small>Player 1 can change these until the first cell is claimed.</small></div>
   </div>
  </header>
  <div id="scores"></div>
@@ -194,6 +199,7 @@ function clickCell(i) {
   if (!S || S.status !== 'playing') return toast(S && S.status === 'waiting' ? 'Waiting for the other player to join.' : 'The game is over.');
   const c = S.cells[i];
   if (c === 3) return toast('Your opponent is solving that cell.');
+  if (c === 5) return toast('Your opponent solved that cell, so it is locked for you.');
   if (c === 4) return toast('You missed this cell. It stays hidden from you.');
   if (c !== 0) return;
   if (S.mine) return toast('Answer your current cell first.');
@@ -207,10 +213,12 @@ function onState(s) {
   if (S && S.mine && s.mine && S.mine.cell === s.mine.cell && s.mine.tries > S.mine.tries) { toast('Oops, wrong answer. Try again!'); $('ans').value = ''; $('ans').focus(); }
   const first = !S, newCell = !S || (S.mine && S.mine.cell) !== (s.mine && s.mine.cell);
   S = s; S.deadline = s.mine ? Date.now() + s.mine.left : 0;
-  if (first) { $('lobby').hidden = true; $('game').hidden = false; document.documentElement.style.setProperty('--me', s.you === 1 ? 'var(--blue)' : 'var(--orange)'); }
+  if (first) { $('lobby').hidden = true; $('game').hidden = false; document.documentElement.style.setProperty('--me', s.you === 1 ? 'var(--blue)' : 'var(--orange)'); document.documentElement.style.setProperty('--opp', s.you === 1 ? 'var(--orange)' : 'var(--blue)'); }
   $('roomtag').textContent = 'Room ' + s.room;
   const mt = $('mtoggle'); mt.checked = s.method === 2; mt.disabled = s.you !== 1 || s.methodLocked;
   mt.title = s.you !== 1 ? 'Only Player 1 can change the method' : s.methodLocked ? 'Locked once play starts' : '';
+  const lk = $('lockrule'); lk.checked = !!s.lockSolved; lk.disabled = s.you !== 1 || s.methodLocked;
+  lk.title = s.you !== 1 ? 'Only Player 1 can change the locking rule' : s.methodLocked ? 'Locked once play starts' : '';
   // scores
   $('scores').replaceChildren(...s.players.map(p => { const d = document.createElement('div'); d.className = 'chip s' + p.slot;
     if (p.empty) { d.textContent = `Waiting for Player ${p.slot}…`; return d; }
@@ -220,9 +228,9 @@ function onState(s) {
     sm.append(dot, `${p.solved} tiles · wrong guesses ${p.strikes}/2`); t.append(n, sm); d.append(av, t); return d; }));
   // board
   $('board').classList.toggle('wait', s.status === 'waiting');
-  s.cells.forEach((c, i) => { const k = c + '-' + s.gameId, b = cells[i]; if (b.dataset.k === k) return; b.dataset.k = k; b.className = 'cell s' + c; b.replaceChildren();
+  s.cells.forEach((c, i) => { const k = c + '-' + s.gameId, b = cells[i]; if (b.dataset.k === k) return; b.dataset.k = k; b.className = 'cell s' + c; b.replaceChildren(); b.title = c === 5 ? 'Locked: solved by your opponent' : ''; b.setAttribute('aria-label', `Row ${Math.floor(i / 10) + 1}, column ${i % 10 + 1}` + (c === 5 ? ', locked by your opponent' : ''));
     if (c === 1) { const im = new Image(); im.alt = ''; im.src = `/tile/${s.room}/${i}?t=${creds.token}&g=${s.gameId}`; b.appendChild(im); }
-    else b.textContent = ['', '', '⏱', '🔒', '✕'][c]; });
+    else b.textContent = ['', '', '✏️', '⏳', '✕', '🔒'][c]; });
   // panel
   const playing = s.status === 'playing';
   $('idle').hidden = !(playing && !s.mine); $('solve').hidden = !s.mine; $('again').hidden = s.status !== 'over';
@@ -271,6 +279,7 @@ $('cno').onclick = () => $('confirm').close();
 $('cyes').onclick = () => { $('confirm').close(); send({ t: 'guess', hero: pickHero.id }); };
 const submit = () => { if ($('ans').value.trim()) send({ t: 'answer', value: $('ans').value }); };
 $('submit').onclick = submit; $('ans').addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+$('lockrule').onchange = e => send({ t: 'lock', on: e.target.checked });
 $('mtoggle').onchange = e => send({ t: 'method', method: e.target.checked ? 2 : 1 });
 $('hintbtn').onclick = () => { const h = $('hint'); h.hidden = !h.hidden; $('hintbtn').setAttribute('aria-expanded', !h.hidden); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('hint').hidden = true; } });
