@@ -1,4 +1,4 @@
-const express = require('express'), http = require('http'), path = require('path'), fs = require('fs');
+const crypto = require('crypto'), express = require('express'), http = require('http'), path = require('path'), fs = require('fs');
 const { WebSocketServer } = require('ws');
 const Q = require('./questions');
 const sharp = require('sharp');
@@ -27,6 +27,7 @@ function scan() {
   });
 }
 const HEROES = scan();
+const BOOT = Date.now().toString(36); // changes on every server start -> icon URLs never go stale
 if (!HEROES.length) throw new Error('No pictures found. Put images in assets/pictures.');
 console.log(`Loaded ${HEROES.length} pictures:`, HEROES.map(h => h.name).join(', '));
 
@@ -50,7 +51,7 @@ function iconOf(h) {
   return icons.get(h.id);
 }
 
-app.get('/api/heroes', (req, res) => res.json(HEROES.map(h => ({ id: h.id, name: h.name, icon: `/icon/${h.id}` }))));
+app.get('/api/heroes', (req, res) => res.json(HEROES.map(h => ({ id: h.id, name: h.name, icon: `/icon/${h.id}?v=${BOOT}` }))));
 app.get('/icon/:id', async (req, res) => {
   const h = HEROES.find(x => x.id === req.params.id);
   if (!h) return res.sendStatus(404);
@@ -74,15 +75,16 @@ app.get('/tile/:room/:cell', async (req, res) => {
 app.get('/full/:room', async (req, res) => {
   const a = authed(req);
   if (!a || a.r.status !== 'over') return res.sendStatus(403);
-  try { res.type('jpeg').send((await prepare(HEROES[a.r.hero])).full); } catch (e) { console.error(e); res.sendStatus(500); }
+  try { res.type('jpeg').set('Cache-Control', 'private, no-store').send((await prepare(HEROES[a.r.hero])).full); } catch (e) { console.error(e); res.sendStatus(500); }
 });
 
+// gameId is a fresh random value per game, so cached tiles/pictures of an older game are never reused
 function resetGame(r) {
   if (r.refresh) { clearTimeout(r.refresh.timer); }
   r.refresh = null;
   let h; do { h = rnd(HEROES.length); } while (HEROES.length > 1 && h === r.hero);
   Object.assign(r, {
-    hero: (prepare(HEROES[h]).catch(() => {}), h), gameId: (r.gameId || 0) + 1, status: 'waiting', started: false, winner: 0, reason: '',
+    hero: (prepare(HEROES[h]).catch(() => {}), h), gameId: crypto.randomBytes(6).toString('hex'), status: 'waiting', started: false, winner: 0, reason: '',
     rev: { 1: new Set(), 2: new Set() }, failed: { 1: new Set(), 2: new Set() },
     strikes: { 1: 0, 2: 0 }, wrong: { 1: [], 2: [] },
   });
@@ -94,7 +96,7 @@ function clearRes(r, s) { if (r.res && r.res[s]) { clearTimeout(r.res[s].timer);
 
 function getRoom(id) {
   if (!rooms.has(id)) {
-    const r = { id, method: 1, category: 'math', players: {}, res: { 1: null, 2: null }, last: Date.now() };
+    const r = { id, method: 1, category: 'fractions', players: {}, res: { 1: null, 2: null }, last: Date.now() };
     resetGame(r); rooms.set(id, r);
   }
   return rooms.get(id);
@@ -108,7 +110,7 @@ function view(r, slot) {
     t: 'state', room: r.id, you: slot, gameId: r.gameId, status: r.status, method: r.method,
     methodLocked: r.started, refresh: r.refresh ? { from: r.refresh.from } : null, cells, wrong: r.wrong[slot], winner: r.winner, reason: r.reason,
     heroName: over ? HEROES[r.hero].name : null,
-    mine: mine ? { cell: mine.cell, left: mine.expires - Date.now(), secs: mine.secs, tries: mine.tries, q: mine.q.text } : null,
+    mine: mine ? { cell: mine.cell, left: mine.expires - Date.now(), secs: mine.secs, tries: mine.tries, q: mine.q.text, hint: mine.q.hint || '' } : null,
     players: [1, 2].map(s => r.players[s] ? {
       slot: s, name: r.players[s].name, avatar: r.players[s].avatar, online: !!(r.players[s].ws && r.players[s].ws.readyState === 1),
       strikes: r.strikes[s], solved: r.rev[s].size } : { slot: s, empty: true }),
@@ -195,9 +197,9 @@ wss.on('connection', ws => {
     if (m.t === 'guess') {
       const i = HEROES.findIndex(h => h.id === m.hero);
       if (i < 0 || r.wrong[slot].includes(HEROES[i].id)) return;
-      if (i === r.hero) return end(r, slot, 'guessed the hero'), broadcast(r);
+      if (i === r.hero) return end(r, slot, 'guess'), broadcast(r);
       r.strikes[slot]++; r.wrong[slot].push(HEROES[i].id);
-      if (r.strikes[slot] >= 2) end(r, o, 'the other player made two wrong guesses');
+      if (r.strikes[slot] >= 2) end(r, o, 'strikes');
       return broadcast(r);
     }
   });
